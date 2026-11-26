@@ -18,6 +18,8 @@ import app.decibravo.ui.common.TopBar
 import app.decibravo.ui.competitions.CompetitionListScreen
 import app.decibravo.ui.edit.CompetitionEditScreen
 import app.decibravo.ui.floor.FloorScreen
+import app.decibravo.ui.measure.MeasureScreen
+import app.decibravo.ui.measure.ResultScreen
 import app.decibravo.ui.table.TableScreen
 import app.decibravo.ui.theme.Palette
 
@@ -37,14 +39,6 @@ object Routes {
     const val FLOOR_PATTERN = "competition/{id}/floor?then={then}"
     const val MEASURE_PATTERN = "competition/{id}/measure/{participantId}"
     const val RESULT_PATTERN = "competition/{id}/result/{participantId}"
-}
-
-@Composable
-private fun Placeholder(title: String, onBack: () -> Unit) {
-    Column(Modifier.fillMaxSize().background(Palette.Bg)) {
-        TopBar(title, onBack)
-        Text(title, color = Palette.Secondary, modifier = Modifier.padding(16.dp))
-    }
 }
 
 @Composable
@@ -103,7 +97,14 @@ fun AppNav() {
                 },
             )
         }
-        composable(Routes.MEASURE_PATTERN) { Placeholder("Замір", back) }
-        composable(Routes.RESULT_PATTERN) { Placeholder("Результат", back) }
+        composable(Routes.MEASURE_PATTERN) {
+            val toTable: () -> Unit = { if (!nav.popBackStack(Routes.TABLE_PATTERN, false)) nav.popBackStack() }
+            MeasureScreen(onExit = toTable)
+        }
+        composable(Routes.RESULT_PATTERN) { entry ->
+            val id = entry.arguments?.getString("id") ?: ""
+            val pid = entry.arguments?.getString("participantId") ?: ""
+            ResultScreen(onBack = back, onRedo = { nav.navigate(Routes.measure(id, pid)) })
+        }
     }
 }

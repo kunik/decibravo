@@ -50,4 +50,23 @@
     <string name="floor_measure_button">Виміряти фон</string>
     <string name="floor_keep">Залишити</string>
     <string name="floor_redo">Переміряти</string>
+    <string name="measure_title">Замір</string>
+    <string name="result_title">Результат</string>
+    <string name="measure_score_label">бал</string>
+    <string name="measure_start">Старт</string>
+    <string name="measure_stop">Стоп</string>
+    <string name="measure_waiting">Чекаю на оплески</string>
+    <string name="measure_progress">%1$s с із %2$d</string>
+    <string name="measure_duration_label">тривалість</string>
+    <string name="measure_strength_label">сила</string>
+    <string name="measure_overloaded">Мікрофон перевантажився; результат може бути заниженим</string>
+    <string name="measure_accept">Зарахувати</string>
+    <string name="measure_redo">Переміряти</string>
+    <string name="measure_failed">Не вдалося записати звук. Можливо, мікрофон зайнятий іншим застосунком.</string>
+    <string name="measure_back_to_table">Назад до таблиці</string>
+    <string name="measure_discard_title">Відкинути цей замір?</string>
+    <string name="measure_discard">Відкинути</string>
+    <string name="result_delete">Вилучити замір</string>
+    <string name="result_delete_confirm">Вилучити замір учасника «%1$s»?</string>
+    <string name="result_place">%1$s місце</string>
 </resources>
