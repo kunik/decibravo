@@ -51,6 +51,20 @@ fun summaryLine(c: Competition): String {
     else "$accepted із ${c.participants.size} замірів"
 }
 
+/**
+ * Форма після перечитування змагання з диска. Ім'я й степери беремо з диска лише при [fillAll];
+ * текст учасників оновлюємо завжди, коли змагання заблоковане або було заблоковане, щоб форма не відставала
+ * від змін (додавання/вилучення), зроблених поза текстовим полем.
+ */
+fun formAfterLoad(form: EditForm, c: Competition, wasLocked: Boolean, fillAll: Boolean): EditForm {
+    val names = c.participants.joinToString("\n") { it.name }
+    return when {
+        fillAll -> EditForm(c.name, names, c.maxDurationSec, c.quietEndSec)
+        c.isLocked() || wasLocked -> form.copy(participantsText = names)
+        else -> form
+    }
+}
+
 data class EditUi(
     val id: String? = null,
     val form: EditForm = EditForm(),
@@ -73,7 +87,7 @@ class CompetitionEditViewModel(app: Application, handle: SavedStateHandle) : And
         _state.update {
             it.copy(
                 id = c.id,
-                form = if (fillForm) EditForm(c.name, c.participants.joinToString("\n") { p -> p.name }, c.maxDurationSec, c.quietEndSec) else it.form,
+                form = formAfterLoad(it.form, c, it.locked, fillForm),
                 locked = c.isLocked(),
                 participants = c.participants,
                 floorRms = c.floorRms,
