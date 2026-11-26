@@ -5,6 +5,9 @@ import app.decibravo.scoring.replay
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
+import java.io.FileOutputStream
+import java.nio.channels.FileChannel
+import java.nio.file.StandardOpenOption
 import java.util.UUID
 
 class Store(private val root: File, private val now: () -> Long = System::currentTimeMillis) {
@@ -13,6 +16,7 @@ class Store(private val root: File, private val now: () -> Long = System::curren
     init {
         File(root, "tmp").deleteRecursively()
         File(root, "tmp").mkdirs()
+        cleanOrphans()
     }
 
     private fun newId() = UUID.randomUUID().toString()
@@ -21,23 +25,59 @@ class Store(private val root: File, private val now: () -> Long = System::curren
     private fun compFile(id: String) = File(compDir(id), "competition.json")
     private fun measDir(id: String) = File(compDir(id), "measurements")
 
-    private fun writeAtomic(target: File, text: String) {
-        target.parentFile?.mkdirs()
-        val tmp = File(target.parentFile, target.name + ".tmp")
-        tmp.writeText(text)
+    /** Записує файл на диск: tmp → flush → fsync → rename → fsync теки. Для `backup` попередній придатний файл зберігається як `.bak`. */
+    private fun writeAtomic(target: File, text: String, backup: Boolean = false, valid: (String) -> Boolean = { true }) {
+        val dir = target.parentFile
+        dir?.mkdirs()
+        val tmp = File(dir, target.name + ".tmp")
+        FileOutputStream(tmp).use { out ->
+            out.write(text.toByteArray(Charsets.UTF_8))
+            out.flush()
+            out.fd.sync()
+        }
+        if (backup && target.exists()) {
+            val current = runCatching { target.readText() }.getOrNull()
+            // Придатний файл стає резервною копією; пошкоджений відкладаємо окремо й ніколи не затираємо ним добру копію.
+            if (current != null && valid(current)) target.copyTo(backupOf(target), overwrite = true)
+            else target.copyTo(File(dir, target.name + ".corrupt"), overwrite = true)
+        }
         if (!tmp.renameTo(target)) {
             target.delete()
             check(tmp.renameTo(target)) { "rename failed: $target" }
         }
+        syncDir(dir)
     }
 
-    fun loadCalibration(): Calibration =
-        try { json.decodeFromString<Calibration>(calibrationFile().readText()) } catch (e: Exception) { Calibration() }
+    private fun backupOf(f: File) = File(f.parentFile, f.name + ".bak")
 
-    fun saveCalibration(c: Calibration) = writeAtomic(calibrationFile(), json.encodeToString(c))
+    private fun syncDir(dir: File?) {
+        if (dir == null) return
+        runCatching { FileChannel.open(dir.toPath(), StandardOpenOption.READ).use { it.force(true) } }
+    }
 
-    fun loadCompetition(id: String): Competition? =
-        try { json.decodeFromString<Competition>(compFile(id).readText()) } catch (e: Exception) { null }
+    private fun readCompetitionText(t: String): Competition? = runCatching { json.decodeFromString<Competition>(t) }.getOrNull()
+    private fun readCalibrationText(t: String): Calibration? = runCatching { json.decodeFromString<Calibration>(t) }.getOrNull()
+
+    private fun <T> readWithBackup(f: File, parse: (String) -> T?): T? {
+        runCatching { f.readText() }.getOrNull()?.let { t -> parse(t)?.let { return it } }
+        return runCatching { backupOf(f).readText() }.getOrNull()?.let(parse)
+    }
+
+    /** true, якщо calibration.json існує, але не читається (і резервної копії теж немає): тоді діють типові значення. */
+    fun calibrationUnreadable(): Boolean =
+        calibrationFile().exists() && readWithBackup(calibrationFile(), ::readCalibrationText) == null
+
+    /** Ідентифікатори тек змагань, чий competition.json не вдалося прочитати; самі файли лишаються на місці. */
+    fun unreadableCompetitionIds(): List<String> =
+        File(root, "competitions").listFiles()?.filter { it.isDirectory && loadCompetition(it.name) == null }?.map { it.name }?.sorted()
+            ?: emptyList()
+
+    fun loadCalibration(): Calibration = readWithBackup(calibrationFile(), ::readCalibrationText) ?: Calibration()
+
+    fun saveCalibration(c: Calibration) =
+        writeAtomic(calibrationFile(), json.encodeToString(c), backup = true) { readCalibrationText(it) != null }
+
+    fun loadCompetition(id: String): Competition? = readWithBackup(compFile(id), ::readCompetitionText)
 
     fun listCompetitions(): List<Competition> =
         File(root, "competitions").listFiles()
@@ -46,6 +86,17 @@ class Store(private val root: File, private val now: () -> Long = System::curren
             ?.sortedByDescending { it.createdAt }
             ?: emptyList()
 
+    /** Прибирає файли замірів, на які не вказує жоден учасник (залишки перерваного збереження), і недописані `.tmp`. */
+    private fun cleanOrphans() {
+        File(root, "competitions").listFiles()?.filter { it.isDirectory }?.forEach { d ->
+            val c = loadCompetition(d.name) ?: return@forEach   // нечитабельне змагання не чіпаємо
+            val keep = c.participants.mapNotNull { it.measurementId }.toSet()
+            File(d, "measurements").listFiles()?.forEach { f ->
+                if (f.name.endsWith(".tmp") || f.nameWithoutExtension !in keep) f.delete()
+            }
+        }
+    }
+
     fun createCompetition(name: String, names: List<String>, maxDurationSec: Int, quietEndSec: Double): Competition {
         val c = Competition(
             id = newId(), name = name, createdAt = now(),
@@ -53,7 +104,7 @@ class Store(private val root: File, private val now: () -> Long = System::curren
             participants = names.map { Participant(newId(), it) },
         )
         measDir(c.id).mkdirs()
-        writeAtomic(compFile(c.id), json.encodeToString(c))
+        writeAtomic(compFile(c.id), json.encodeToString(c), backup = true) { readCompetitionText(it) != null }
         return c
     }
 
@@ -62,7 +113,7 @@ class Store(private val root: File, private val now: () -> Long = System::curren
         if (old != null && old.isLocked() &&
             (old.maxDurationSec != c.maxDurationSec || old.quietEndSec != c.quietEndSec || old.floorRms != c.floorRms)
         ) throw IllegalStateException("Competition is locked")
-        writeAtomic(compFile(c.id), json.encodeToString(c))
+        writeAtomic(compFile(c.id), json.encodeToString(c), backup = true) { readCompetitionText(it) != null }
     }
 
     fun deleteCompetition(id: String) { compDir(id).deleteRecursively() }
@@ -94,9 +145,10 @@ class Store(private val root: File, private val now: () -> Long = System::curren
 
     fun removeParticipant(competitionId: String, participantId: String): Competition {
         val c = require(competitionId)
-        c.participants.firstOrNull { it.id == participantId }?.measurementId?.let { deleteMeasurementFiles(competitionId, it) }
+        val oldMid = c.participants.firstOrNull { it.id == participantId }?.measurementId
         val updated = withoutCalibrationIfEmpty(c.copy(participants = c.participants.filter { it.id != participantId }))
-        saveCompetition(updated)
+        saveCompetition(updated)                                  // спершу нова правда, потім прибирання
+        oldMid?.let { deleteMeasurementFiles(competitionId, it) }
         return updated
     }
 
@@ -117,22 +169,24 @@ class Store(private val root: File, private val now: () -> Long = System::curren
         }
         val m = Measurement(mid, participantId, now(), pending.audioSource, pending.frames, pending.result, wavName)
         writeAtomic(File(dir, "$mid.json"), json.encodeToString(m))
-        participant.measurementId?.let { deleteMeasurementFiles(competitionId, it) }
+        val oldMid = participant.measurementId
         val updated = c.copy(
             frozenCalibration = c.frozenCalibration ?: loadCalibration(),
             participants = c.participants.map { if (it.id == participantId) it.copy(measurementId = mid) else it },
         )
-        saveCompetition(updated)
+        saveCompetition(updated)                                  // точка фіксації
+        oldMid?.let { deleteMeasurementFiles(competitionId, it) } // старе прибираємо лише після неї
         return updated
     }
 
     fun deleteMeasurement(competitionId: String, participantId: String): Competition {
         val c = require(competitionId)
-        c.participants.firstOrNull { it.id == participantId }?.measurementId?.let { deleteMeasurementFiles(competitionId, it) }
+        val oldMid = c.participants.firstOrNull { it.id == participantId }?.measurementId
         val updated = withoutCalibrationIfEmpty(
             c.copy(participants = c.participants.map { if (it.id == participantId) it.copy(measurementId = null) else it })
         )
         saveCompetition(updated)
+        oldMid?.let { deleteMeasurementFiles(competitionId, it) }
         return updated
     }
 

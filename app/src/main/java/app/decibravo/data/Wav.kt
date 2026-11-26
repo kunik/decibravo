@@ -36,6 +36,6 @@ class WavWriter(file: File) : Closeable {
         h.put("data".toByteArray()).putInt(dataBytes.toInt())
         raf.seek(0)
         raf.write(h.array())
-        raf.close()
+        try { raf.fd.sync() } finally { raf.close() }
     }
 }

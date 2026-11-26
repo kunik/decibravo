@@ -15,6 +15,8 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.File
 import kotlin.math.sqrt
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 
 class StoreTest {
     @get:Rule val tmp = TemporaryFolder()
@@ -85,5 +87,70 @@ class StoreTest {
     @Test fun removeParticipant_dropsItsMeasurement() {
         val s = Store(tmp.root); val c = s.createCompetition("n", listOf("A", "B"), 10, 2.0); s.accept(c.id, c.participants[0].id, pending())
         val after = s.removeParticipant(c.id, c.participants[0].id); assertEquals(listOf("B"), after.participants.map { it.name }); assertFalse(after.isLocked())
+    }
+
+    private fun measDir(c: Competition) = File(tmp.root, "competitions/${c.id}/measurements")
+    private fun jammed(c: Competition) = File(tmp.root, "competitions/${c.id}/competition.json.tmp").also { it.mkdirs() }   // записати competition.json стане неможливо
+
+    @Test fun accept_failureToSave_keepsOldMeasurement() {
+        val s = Store(tmp.root); val c = s.createCompetition("n", listOf("A"), 10, 2.0); val pid = c.participants[0].id
+        val first = s.accept(c.id, pid, pending()).participants[0].measurementId!!
+        jammed(c)
+        try { s.accept(c.id, pid, pending()); org.junit.Assert.fail("очікували збій") } catch (_: java.io.IOException) { }
+        val again = s.loadCompetition(c.id)!!
+        assertEquals(first, again.participants[0].measurementId)
+        assertTrue(s.loadMeasurement(c.id, first) != null)
+        assertTrue(File(measDir(c), "$first.wav").exists())
+    }
+    @Test fun deleteMeasurement_failureToSave_keepsFiles() {
+        val s = Store(tmp.root); val c = s.createCompetition("n", listOf("A"), 10, 2.0); val pid = c.participants[0].id
+        val mid = s.accept(c.id, pid, pending()).participants[0].measurementId!!
+        jammed(c)
+        try { s.deleteMeasurement(c.id, pid); org.junit.Assert.fail("очікували збій") } catch (_: java.io.IOException) { }
+        assertTrue(File(measDir(c), "$mid.json").exists()); assertEquals(mid, s.loadCompetition(c.id)!!.participants[0].measurementId)
+    }
+    @Test fun removeParticipant_failureToSave_keepsFiles() {
+        val s = Store(tmp.root); val c = s.createCompetition("n", listOf("A", "B"), 10, 2.0); val pid = c.participants[0].id
+        val mid = s.accept(c.id, pid, pending()).participants[0].measurementId!!
+        jammed(c)
+        try { s.removeParticipant(c.id, pid); org.junit.Assert.fail("очікували збій") } catch (_: java.io.IOException) { }
+        assertTrue(File(measDir(c), "$mid.json").exists()); assertEquals(2, s.loadCompetition(c.id)!!.participants.size)
+    }
+    @Test fun orphanMeasurementFiles_areIgnoredAndCleanedOnStart() {
+        val s = Store(tmp.root); val c = s.createCompetition("n", listOf("A"), 10, 2.0); val pid = c.participants[0].id
+        val first = s.accept(c.id, pid, pending()).participants[0].measurementId!!
+        val after = s.accept(c.id, pid, pending()).participants[0].measurementId!!
+        // імітація збою між «зберегти змагання» і «видалити старе»: старі файли нікому не потрібні, але лишились
+        File(measDir(c), "$first.json").writeText("{}"); File(measDir(c), "$first.wav").writeText("x"); File(measDir(c), "x.json.tmp").writeText("y")
+        assertEquals(after, s.loadCompetition(c.id)!!.participants[0].measurementId); assertTrue(s.loadMeasurement(c.id, after) != null)
+        val restarted = Store(tmp.root)
+        assertEquals(setOf("$after.json", "$after.wav"), measDir(c).list()!!.toSet())
+        assertTrue(restarted.loadMeasurement(c.id, after) != null); assertNull(restarted.loadMeasurement(c.id, first))
+    }
+    @Test fun orphanCleanup_leavesUnreadableCompetitionAlone() {
+        val s = Store(tmp.root); val c = s.createCompetition("n", listOf("A"), 10, 2.0); s.accept(c.id, c.participants[0].id, pending())
+        File(tmp.root, "competitions/${c.id}/competition.json").writeText(""); File(tmp.root, "competitions/${c.id}/competition.json.bak").delete()
+        val n = measDir(c).list()!!.size
+        val again = Store(tmp.root)
+        assertEquals(n, measDir(c).list()!!.size); assertEquals(listOf(c.id), again.unreadableCompetitionIds()); assertTrue(again.listCompetitions().isEmpty())
+    }
+    @Test fun emptyCompetitionFile_fallsBackToBackup_andIsNotCopiedOverIt() {
+        val s = Store(tmp.root); val c = s.createCompetition("n", listOf("A"), 10, 2.0)
+        s.saveCompetition(c.copy(name = "друга"))                            // тепер є .bak з першою версією
+        val f = File(tmp.root, "competitions/${c.id}/competition.json"); f.writeText("")
+        assertEquals("n", Store(tmp.root).loadCompetition(c.id)!!.name)
+        s.saveCompetition(c.copy(name = "третя"))                            // порожній файл не має затерти добру копію
+        assertEquals("третя", s.loadCompetition(c.id)!!.name)
+        assertEquals("n", Json.decodeFromString<Competition>(File(f.parentFile, "competition.json.bak").readText()).name)
+        assertTrue(File(f.parentFile, "competition.json.corrupt").exists())
+    }
+    @Test fun emptyCalibration_isReported_notSilent_andBackupUsed() {
+        val s = Store(tmp.root); val f = File(tmp.root, "calibration.json")
+        assertFalse(s.calibrationUnreadable())                               // файла немає — просто типові значення
+        s.saveCalibration(Calibration(gamma = 1.3)); s.saveCalibration(Calibration(gamma = 1.4))
+        f.writeText("")
+        assertEquals(1.3, s.loadCalibration().gamma, 0.0); assertFalse(s.calibrationUnreadable())
+        File(tmp.root, "calibration.json.bak").delete()
+        assertEquals(Calibration(), s.loadCalibration()); assertTrue(s.calibrationUnreadable()); assertTrue(f.exists())
     }
 }

@@ -86,4 +86,6 @@
     <string name="recalc_confirm">Бали всіх учасників буде перераховано з поточним опорним рівнем і вагою гучності. Тривалість не зміниться.</string>
     <string name="action_back">Назад</string>
     <string name="mark_description">db</string>
+    <string name="warn_unreadable_competitions">Не вдалося прочитати змагань: %1$d. Файли не видалено.</string>
+    <string name="warn_calibration_unreadable">Файл калібрування пошкоджено, діють типові значення. Відкалібруйте знову.</string>
 </resources>

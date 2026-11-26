@@ -40,6 +40,8 @@ fun CompetitionListScreen(
 ) {
     val items by vm.items.collectAsStateWithLifecycle()
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.refresh() }
+    val unreadable by vm.unreadable.collectAsStateWithLifecycle()
+    val calibrationBad by vm.calibrationUnreadable.collectAsStateWithLifecycle()
     val calibrationLabel = stringResource(R.string.calibration_title)
 
     Column(Modifier.fillMaxSize().background(Palette.Bg)) {
@@ -48,6 +50,8 @@ fun CompetitionListScreen(
                 Text("⚙", color = Palette.Text, fontSize = 26.sp)
             }
         }
+        if (unreadable > 0) Text(stringResource(R.string.warn_unreadable_competitions, unreadable), color = Palette.Warning, fontSize = 16.sp, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+        if (calibrationBad) Text(stringResource(R.string.warn_calibration_unreadable), color = Palette.Warning, fontSize = 16.sp, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
         if (items.isEmpty()) {
             Text(
                 stringResource(R.string.competitions_empty), color = Palette.Secondary, fontSize = 18.sp,
