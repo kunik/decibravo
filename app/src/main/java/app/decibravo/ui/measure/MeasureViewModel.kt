@@ -85,6 +85,7 @@ class MeasureViewModel(app: Application, handle: SavedStateHandle) : AndroidView
         val session = session ?: return
         if (job != null || session.state != MeasureState.Ready) return
         publish(session.start())
+        if (session.state !is MeasureState.Running) return   // не вдалося відкрити WAV
         job = viewModelScope.launch {
             try {
                 source.chunks()

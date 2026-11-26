@@ -58,6 +58,15 @@ class FloorViewModel(app: Application, handle: SavedStateHandle) : AndroidViewMo
         }
     }
 
+    /** Активність пішла у фон: триваючий відлік фону скасовуємо, щоб у змагання не потрапив нульовий фон. */
+    fun onActivityStopped() {
+        if (_state.value is FloorState.Counting) {
+            job?.cancel()
+            job = null
+            _state.value = FloorState.Idle
+        }
+    }
+
     fun remeasure() {
         _state.value = FloorState.Idle
         measure()

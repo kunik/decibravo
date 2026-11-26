@@ -187,6 +187,8 @@ class CalibrationViewModel(app: Application) : AndroidViewModel(app) {
         if (!_state.value.listening) stopAll(keepFloor = true)
     }
 
+    fun onActivityStopped() = stopAll()
+
     private fun stopAll(keepFloor: Boolean = false) {
         job?.cancel()
         job = null

@@ -38,6 +38,8 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.decibravo.R
@@ -52,6 +54,7 @@ import kotlin.math.roundToInt
 
 @Composable
 fun CalibrationScreen(onBack: (() -> Unit)?, vm: CalibrationViewModel = viewModel()) {
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { vm.onActivityStopped() }
     Column(Modifier.fillMaxSize().background(Palette.Bg)) {
         TopBar(stringResource(R.string.calibration_title), onBack)
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {

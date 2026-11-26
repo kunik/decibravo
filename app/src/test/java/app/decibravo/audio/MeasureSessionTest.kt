@@ -54,4 +54,8 @@ class MeasureSessionTest {
         val s = MeasureSession(p, "x", tmp.newFile()); s.start(); repeat(30) { s.onChunk(chunk(LOUD_RMS)) }; val d = s.stop()
         assertEquals(d, s.onChunk(chunk(LOUD_RMS))); assertEquals(30, s.pending()!!.frames.size)
     }
+    @Test fun wavOpenFailure_endsInFailed_insteadOfThrowing() {
+        val s = MeasureSession(p, "UNPROCESSED", java.io.File(tmp.root, "нема/такої/теки.wav"))
+        assertTrue(s.start() is MeasureState.Failed)
+    }
 }

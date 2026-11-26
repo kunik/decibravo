@@ -41,7 +41,11 @@ class MeasureSession(
         if (state != MeasureState.Ready) return state
         engine = ScoreEngine(params)
         frames.clear()
-        wav = WavWriter(wavTemp)
+        try {
+            wav = WavWriter(wavTemp)
+        } catch (t: Throwable) {
+            return fail(t)
+        }
         state = MeasureState.Running(waiting = true, score = 0.0, elapsedSec = 0.0, bars = emptyList())
         return state
     }

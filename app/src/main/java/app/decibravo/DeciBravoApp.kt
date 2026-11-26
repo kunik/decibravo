@@ -6,7 +6,7 @@ import app.decibravo.audio.Recorder
 import app.decibravo.data.Store
 
 class DeciBravoApp : Application() {
-    val store: Store by lazy { Store(getExternalFilesDir(null)!!) }
+    val store: Store by lazy { Store(getExternalFilesDir(null) ?: filesDir) }
 
     fun frameSource(): FrameSource = Recorder(this)
 }

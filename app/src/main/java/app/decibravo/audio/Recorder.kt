@@ -33,15 +33,20 @@ class Recorder(private val context: Context) : FrameSource {
         var ns: NoiseSuppressor? = null
         try {
             check(record.state == AudioRecord.STATE_INITIALIZED) { "AudioRecord не ініціалізовано" }
-            if (AutomaticGainControl.isAvailable()) agc = AutomaticGainControl.create(record.audioSessionId)?.also { it.enabled = false }
-            if (NoiseSuppressor.isAvailable()) ns = NoiseSuppressor.create(record.audioSessionId)?.also { it.enabled = false }
+            if (AutomaticGainControl.isAvailable()) agc = AutomaticGainControl.create(record.audioSessionId)?.also { a -> runCatching { a.enabled = false } }
+            if (NoiseSuppressor.isAvailable()) ns = NoiseSuppressor.create(record.audioSessionId)?.also { n -> runCatching { n.enabled = false } }
             record.startRecording()
+            check(record.recordingState == AudioRecord.RECORDSTATE_RECORDING) { "Запис не розпочато" }
             val chunker = FrameChunker()
+            val silence = ZeroRunDetector()
             val buf = ShortArray(FRAME_SAMPLES)
             while (true) {
                 val n = record.read(buf, 0, buf.size)
                 if (n < 0) throw IllegalStateException("AudioRecord.read повернув $n")
-                for (c in chunker.push(buf, n)) emit(c)
+                for (c in chunker.push(buf, n)) {
+                    if (silence.push(c.pcm)) throw SilentCaptureException()
+                    emit(c)
+                }
             }
         } finally {
             try { record.stop() } catch (_: Exception) { }

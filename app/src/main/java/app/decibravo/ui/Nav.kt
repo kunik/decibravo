@@ -75,10 +75,10 @@ fun AppNav() {
             TableScreen(
                 competitionId = id,
                 onBack = back,
-                onSettings = { nav.navigate(Routes.edit(id)) },
-                onFloor = { nav.navigate(Routes.floor(id, it)) },
-                onMeasure = { nav.navigate(Routes.measure(id, it)) },
-                onResult = { nav.navigate(Routes.result(id, it)) },
+                onSettings = { nav.navigate(Routes.edit(id)) { launchSingleTop = true } },
+                onFloor = { nav.navigate(Routes.floor(id, it)) { launchSingleTop = true } },
+                onMeasure = { nav.navigate(Routes.measure(id, it)) { launchSingleTop = true } },
+                onResult = { nav.navigate(Routes.result(id, it)) { launchSingleTop = true } },
             )
         }
         composable(

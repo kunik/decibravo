@@ -17,6 +17,8 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.decibravo.R
@@ -31,6 +33,7 @@ private fun db(v: Int) = v.toString().replace('-', '−')
 /** onKept(thenParticipant): викликається після збереження фону. */
 @Composable
 fun FloorScreen(onBack: () -> Unit, onKept: (thenParticipant: String?) -> Unit, vm: FloorViewModel = viewModel()) {
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { vm.onActivityStopped() }
     Column(Modifier.fillMaxSize().background(Palette.Bg)) {
         TopBar(stringResource(R.string.floor_screen_title), onBack)
         WithMicPermission {

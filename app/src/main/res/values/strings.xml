@@ -5,7 +5,7 @@
     <string name="calibration_title">Калібрування</string>
     <string name="mic_check_title">Перевірка мікрофона</string>
     <string name="mic_source_unprocessed">Джерело звуку: без обробки</string>
-    <string name="mic_source_fallback">Джерело звуку: розпізнавання мови, вирівнювання гучності вимкнено</string>
+    <string name="mic_source_fallback">Джерело звуку: розпізнавання мови (без обробки не підтримується)</string>
     <string name="mic_listen">Слухати</string>
     <string name="mic_stop">Зупинити</string>
     <string name="mic_level_unit">дБFS</string>

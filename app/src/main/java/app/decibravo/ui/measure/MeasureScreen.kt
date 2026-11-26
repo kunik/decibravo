@@ -25,6 +25,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -100,7 +101,8 @@ fun MeasureScreen(onExit: () -> Unit, vm: MeasureViewModel = viewModel()) {
         view.keepScreenOn = true
         onDispose { view.keepScreenOn = false }
     }
-    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { vm.onActivityStopped() }
+    val activity = LocalContext.current as? android.app.Activity
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { if (activity?.isChangingConfigurations != true) vm.onActivityStopped() }
     LaunchedEffect(ui.accepted) { if (ui.accepted) onExit() }
 
     val handleBack: () -> Unit = {
@@ -164,7 +166,7 @@ fun MeasureScreen(onExit: () -> Unit, vm: MeasureViewModel = viewModel()) {
             onDismissRequest = { confirmDiscard = false },
             containerColor = Palette.Bg,
             title = { Text(stringResource(R.string.measure_discard_title), color = Palette.Text) },
-            confirmButton = { TextButton(onClick = { confirmDiscard = false; vm.cancel(); onExit() }, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.measure_discard), color = Palette.Warning) } },
+            confirmButton = { TextButton(onClick = { confirmDiscard = false; vm.cancel() }, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.measure_discard), color = Palette.Warning) } },
             dismissButton = { TextButton(onClick = { confirmDiscard = false }, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.action_cancel), color = Palette.Text) } },
         )
     }
