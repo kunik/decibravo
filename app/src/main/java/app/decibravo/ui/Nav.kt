@@ -17,6 +17,8 @@ import app.decibravo.ui.calibration.CalibrationScreen
 import app.decibravo.ui.common.TopBar
 import app.decibravo.ui.competitions.CompetitionListScreen
 import app.decibravo.ui.edit.CompetitionEditScreen
+import app.decibravo.ui.floor.FloorScreen
+import app.decibravo.ui.table.TableScreen
 import app.decibravo.ui.theme.Palette
 
 object Routes {
@@ -74,8 +76,33 @@ fun AppNav() {
                 onDeleted = { nav.popBackStack(Routes.COMPETITIONS, false) },
             )
         }
-        composable(Routes.TABLE_PATTERN) { Placeholder("Таблиця", back) }
-        composable(Routes.FLOOR_PATTERN) { Placeholder("Фон", back) }
+        composable(Routes.TABLE_PATTERN, listOf(navArgument("id") { type = NavType.StringType })) { entry ->
+            val id = entry.arguments?.getString("id") ?: ""
+            TableScreen(
+                competitionId = id,
+                onBack = back,
+                onSettings = { nav.navigate(Routes.edit(id)) },
+                onFloor = { nav.navigate(Routes.floor(id, it)) },
+                onMeasure = { nav.navigate(Routes.measure(id, it)) },
+                onResult = { nav.navigate(Routes.result(id, it)) },
+            )
+        }
+        composable(
+            Routes.FLOOR_PATTERN,
+            listOf(
+                navArgument("id") { type = NavType.StringType },
+                navArgument("then") { type = NavType.StringType; nullable = true; defaultValue = null },
+            ),
+        ) { entry ->
+            val id = entry.arguments?.getString("id") ?: ""
+            FloorScreen(
+                onBack = back,
+                onKept = { then ->
+                    if (then != null) nav.navigate(Routes.measure(id, then)) { popUpTo(Routes.FLOOR_PATTERN) { inclusive = true } }
+                    else nav.popBackStack()
+                },
+            )
+        }
         composable(Routes.MEASURE_PATTERN) { Placeholder("Замір", back) }
         composable(Routes.RESULT_PATTERN) { Placeholder("Результат", back) }
     }

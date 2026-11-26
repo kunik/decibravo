@@ -41,4 +41,13 @@
     <string name="remove_participant_confirm">Вилучити «%1$s» разом із замірами?</string>
     <string name="competition_delete">Вилучити змагання</string>
     <string name="competition_delete_confirm">Вилучити змагання разом з усіма замірами? Це не можна скасувати.</string>
+    <string name="table_waiting">Ще не виступали</string>
+    <string name="table_copy">Скопіювати таблицю</string>
+    <string name="table_copied">Скопійовано</string>
+    <string name="overloaded_description">Мікрофон перевантажився під час заміру</string>
+    <string name="floor_screen_title">Вимір фону</string>
+    <string name="floor_hint">Поставте телефон на місце й зробіть тишу</string>
+    <string name="floor_measure_button">Виміряти фон</string>
+    <string name="floor_keep">Залишити</string>
+    <string name="floor_redo">Переміряти</string>
 </resources>
