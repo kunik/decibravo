@@ -1,4 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">DeciBravo</string>
+
+    <string name="calibration_title">Калібрування</string>
+    <string name="mic_check_title">Перевірка мікрофона</string>
+    <string name="mic_source_unprocessed">Джерело звуку: без обробки</string>
+    <string name="mic_source_fallback">Джерело звуку: розпізнавання мови (без обробки не підтримується)</string>
+    <string name="mic_listen">Слухати</string>
+    <string name="mic_stop">Зупинити</string>
+    <string name="mic_level_unit">дБFS</string>
+    <string name="mic_peak">Найбільший рівень за 5 с: %1$s дБFS</string>
+    <string name="mic_measure_floor">Виміряти фон (3 с)</string>
+    <string name="mic_floor_counting">Вимірюю фон… %1$d с</string>
+    <string name="mic_floor_result">Фон: %1$s дБFS</string>
+    <string name="mic_floor_noisy">Були гучні сплески; переміряйте в тиші</string>
+    <string name="mic_error">Не вдалося почати запис звуку</string>
+    <string name="mic_permission_explain">Для заміру потрібен мікрофон: застосунок слухає лише поки триває замір або перевірка. Дозвольте доступ до мікрофона в налаштуваннях.</string>
+    <string name="open_settings">Відкрити налаштування</string>
 </resources>
