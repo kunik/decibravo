@@ -1,5 +1,9 @@
 package app.decibravo.ui.measure
 
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import app.decibravo.ui.theme.Palette
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -32,9 +36,10 @@ fun ResultScreen(onBack: () -> Unit, onRedo: () -> Unit, vm: ResultViewModel = v
     if (confirm) {
         AlertDialog(
             onDismissRequest = { confirm = false },
-            title = { Text(stringResource(R.string.result_delete_confirm, ui.name)) },
-            confirmButton = { TextButton(onClick = { confirm = false; vm.delete(); onBack() }) { Text(stringResource(R.string.result_delete)) } },
-            dismissButton = { TextButton(onClick = { confirm = false }) { Text(stringResource(R.string.action_cancel)) } },
+            containerColor = Palette.Bg,
+            title = { Text(stringResource(R.string.result_delete_confirm, ui.name), color = Palette.Text) },
+            confirmButton = { TextButton(onClick = { confirm = false; vm.delete(); onBack() }, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.result_delete), color = Palette.Warning) } },
+            dismissButton = { TextButton(onClick = { confirm = false }, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.action_cancel), color = Palette.Text) } },
         )
     }
 }

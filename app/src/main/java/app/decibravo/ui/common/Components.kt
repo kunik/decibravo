@@ -4,6 +4,15 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.Image
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import app.decibravo.R
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -87,19 +96,32 @@ fun Stepper(
     }
 }
 
+/**
+ * Бал найбільшим шрифтом, що вміщається: три цифри займають майже всю ширину, для довших шрифт зменшується.
+ * fill = false дає фіксований розмір (для допоміжних значень).
+ */
 @Composable
-fun ScoreNumber(text: String, color: Color = Palette.Text, modifier: Modifier = Modifier) {
-    Text(
-        text = text,
-        color = color,
-        fontFamily = DigitFont,
-        fontSize = (160f * scoreScale(text)).sp,
-        textAlign = TextAlign.Center,
-        maxLines = 1,
-        overflow = TextOverflow.Clip,
-        style = TextStyle(fontFeatureSettings = "tnum"),
-        modifier = modifier.fillMaxWidth(),
-    )
+fun ScoreNumber(text: String, color: Color = Palette.Text, modifier: Modifier = Modifier, fill: Boolean = true) {
+    val style = TextStyle(fontFamily = DigitFont, fontFeatureSettings = "tnum")
+    if (!fill) {
+        Text(
+            text = text, color = color, fontFamily = DigitFont, fontSize = (160f * scoreScale(text)).sp,
+            textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Clip, style = style, modifier = modifier.fillMaxWidth(),
+        )
+        return
+    }
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    BoxWithConstraints(modifier.fillMaxWidth()) {
+        val probe = measurer.measure("000", style.copy(fontSize = 100.sp), maxLines = 1).size.width.coerceAtLeast(1)
+        val threeDigitsPx = constraints.maxWidth * 0.92f
+        val sizePx = (100f * threeDigitsPx / probe).coerceAtMost(with(density) { 300.sp.toPx() })
+        val fontSize = with(density) { (sizePx * scoreScale(text)).toSp() }
+        Text(
+            text = text, color = color, fontFamily = DigitFont, fontSize = fontSize,
+            textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Clip, style = style, modifier = Modifier.fillMaxWidth(),
+        )
+    }
 }
 
 /** -1f = сіра крапка; 0…1 = жовтий стовпчик. */
@@ -122,16 +144,21 @@ fun LevelBars(bars: List<Float>, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun TopBar(title: String, onBack: (() -> Unit)?, action: (@Composable () -> Unit)? = null) {
+fun TopBar(title: String, onBack: (() -> Unit)?, showMark: Boolean = false, action: (@Composable () -> Unit)? = null) {
     Row(
         modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (onBack != null) {
-            androidx.compose.material3.TextButton(onClick = onBack, modifier = Modifier.heightIn(min = 48.dp).width(56.dp)) {
+            val backLabel = stringResource(R.string.action_back)
+            androidx.compose.material3.TextButton(onClick = onBack, modifier = Modifier.heightIn(min = 48.dp).width(56.dp).semantics { contentDescription = backLabel }) {
                 Text("‹", color = Palette.Text, fontSize = 32.sp)
             }
         } else {
+            Box(Modifier.width(12.dp))
+        }
+        if (showMark) {
+            Image(painterResource(R.drawable.ic_mark), contentDescription = stringResource(R.string.mark_description), modifier = Modifier.size(32.dp))
             Box(Modifier.width(12.dp))
         }
         Text(title, color = Palette.Text, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))

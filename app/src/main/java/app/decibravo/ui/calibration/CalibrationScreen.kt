@@ -92,7 +92,7 @@ private fun MicCheckBlock(vm: CalibrationViewModel) {
         }
         if (s.listening) {
             Spacer(Modifier.height(16.dp))
-            ScoreNumber(db(s.levelDb), modifier = Modifier.padding(vertical = 0.dp))
+            ScoreNumber(db(s.levelDb), fill = false)
             Text(stringResource(R.string.mic_level_unit), color = Palette.Secondary, fontSize = 16.sp)
             Spacer(Modifier.height(8.dp))
             Text(stringResource(R.string.mic_peak, db(s.peakDb)), color = Palette.Text, fontSize = 18.sp)

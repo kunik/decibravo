@@ -84,4 +84,6 @@
     <string name="cal_saved">Збережено</string>
     <string name="recalc_action">Перерахувати за поточним калібруванням</string>
     <string name="recalc_confirm">Бали всіх учасників буде перераховано з поточним опорним рівнем і вагою гучності. Тривалість не зміниться.</string>
+    <string name="action_back">Назад</string>
+    <string name="mark_description">db</string>
 </resources>

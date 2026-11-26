@@ -43,7 +43,7 @@ fun CompetitionListScreen(
     val calibrationLabel = stringResource(R.string.calibration_title)
 
     Column(Modifier.fillMaxSize().background(Palette.Bg)) {
-        TopBar(stringResource(R.string.competitions_title), onBack = null) {
+        TopBar(stringResource(R.string.competitions_title), onBack = null, showMark = true) {
             IconButton(onClick = onCalibration, modifier = Modifier.semantics { contentDescription = calibrationLabel }) {
                 Text("⚙", color = Palette.Text, fontSize = 26.sp)
             }

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -49,7 +50,6 @@ import app.decibravo.ui.common.WithMicPermission
 import app.decibravo.ui.theme.DigitFont
 import app.decibravo.ui.theme.Palette
 
-private val ReadyGrey = Color(0xFF757575)
 
 /** Спільна розмітка результату: екран заміру в стані Done і екран результату. */
 @Composable
@@ -135,7 +135,7 @@ fun MeasureScreen(onExit: () -> Unit, vm: MeasureViewModel = viewModel()) {
                         val score = (st as? MeasureState.Running)?.takeIf { !it.waiting }?.score
                         ScoreNumber(
                             if (score != null) fmtScore(score) else "0",
-                            color = if (st is MeasureState.Ready) ReadyGrey else Palette.Text,
+                            color = if (st is MeasureState.Ready) Palette.Secondary else Palette.Text,
                         )
                         Text(stringResource(R.string.measure_score_label), color = Palette.Secondary, fontSize = 18.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                         Spacer(Modifier.height(24.dp))
@@ -162,9 +162,10 @@ fun MeasureScreen(onExit: () -> Unit, vm: MeasureViewModel = viewModel()) {
     if (confirmDiscard) {
         AlertDialog(
             onDismissRequest = { confirmDiscard = false },
-            title = { Text(stringResource(R.string.measure_discard_title)) },
-            confirmButton = { TextButton(onClick = { confirmDiscard = false; vm.cancel(); onExit() }) { Text(stringResource(R.string.measure_discard)) } },
-            dismissButton = { TextButton(onClick = { confirmDiscard = false }) { Text(stringResource(R.string.action_cancel)) } },
+            containerColor = Palette.Bg,
+            title = { Text(stringResource(R.string.measure_discard_title), color = Palette.Text) },
+            confirmButton = { TextButton(onClick = { confirmDiscard = false; vm.cancel(); onExit() }, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.measure_discard), color = Palette.Warning) } },
+            dismissButton = { TextButton(onClick = { confirmDiscard = false }, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.action_cancel), color = Palette.Text) } },
         )
     }
 }
