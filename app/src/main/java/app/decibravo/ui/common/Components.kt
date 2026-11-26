@@ -55,7 +55,7 @@ fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifi
             disabledContainerColor = Palette.Line, disabledContentColor = Palette.Secondary,
         ),
         modifier = modifier.fillMaxWidth().height(height),
-    ) { Text(text, fontSize = 22.sp, fontWeight = FontWeight.Bold) }
+    ) { Text(text, fontSize = if (height >= 90.dp) 30.sp else 22.sp, fontWeight = FontWeight.Bold) }
 }
 
 @Composable
@@ -67,7 +67,7 @@ fun OutlineButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifi
         border = BorderStroke(2.dp, if (enabled) Palette.Text else Palette.Line),
         colors = ButtonDefaults.outlinedButtonColors(contentColor = Palette.Text, disabledContentColor = Palette.Secondary),
         modifier = modifier.fillMaxWidth().height(height),
-    ) { Text(text, fontSize = 20.sp, fontWeight = FontWeight.Bold) }
+    ) { Text(text, fontSize = if (height >= 90.dp) 30.sp else 20.sp, fontWeight = FontWeight.Bold) }
 }
 
 @Composable
@@ -115,8 +115,9 @@ fun ScoreNumber(text: String, color: Color = Palette.Text, modifier: Modifier = 
     BoxWithConstraints(modifier.fillMaxWidth()) {
         val probe = measurer.measure("000", style.copy(fontSize = 100.sp), maxLines = 1).size.width.coerceAtLeast(1)
         val threeDigitsPx = constraints.maxWidth * 0.92f
-        val sizePx = (100f * threeDigitsPx / probe).coerceAtMost(with(density) { 300.sp.toPx() })
-        val fontSize = with(density) { (sizePx * scoreScale(text)).toSp() }
+        // probe — ширина «000» у пікселях за розміру 100 sp, тож відношення дає розмір одразу в sp
+        val threeDigitsSp = (100f * threeDigitsPx / probe).coerceAtMost(300f)
+        val fontSize = (threeDigitsSp * scoreScale(text)).sp
         Text(
             text = text, color = color, fontFamily = DigitFont, fontSize = fontSize,
             textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Clip, style = style, modifier = Modifier.fillMaxWidth(),
