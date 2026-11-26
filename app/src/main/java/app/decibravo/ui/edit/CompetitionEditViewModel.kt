@@ -135,6 +135,12 @@ class CompetitionEditViewModel(app: Application, handle: SavedStateHandle) : And
         applyLoaded(store.addParticipants(id, names), fillForm = false)
     }
 
+    fun recalculate() {
+        val id = _state.value.id ?: return
+        store.recalculate(id)
+        refresh()
+    }
+
     fun deleteCompetition() {
         _state.value.id?.let { store.deleteCompetition(it) }
     }

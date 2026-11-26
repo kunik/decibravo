@@ -72,6 +72,7 @@ fun CompetitionEditScreen(
     var renameTarget by remember { mutableStateOf<Participant?>(null) }
     var removeTarget by remember { mutableStateOf<Participant?>(null) }
     var deleteDialog by remember { mutableStateOf(false) }
+    var recalcDialog by remember { mutableStateOf(false) }
     val form = s.form
 
     Column(Modifier.fillMaxSize().background(Palette.Bg).imePadding()) {
@@ -135,6 +136,9 @@ fun CompetitionEditScreen(
             }
             if (s.locked) Text(stringResource(R.string.locked_note), color = Palette.Warning, fontSize = 16.sp)
 
+            if (s.locked) {
+                OutlineButton(stringResource(R.string.recalc_action), onClick = { recalcDialog = true })
+            }
             if (!isNew) {
                 OutlineButton(stringResource(R.string.competition_delete), onClick = { deleteDialog = true })
             }
@@ -164,6 +168,10 @@ fun CompetitionEditScreen(
             onDismiss = { removeTarget = null }, onOk = { vm.remove(p.id); removeTarget = null },
         )
     }
+    if (recalcDialog) ConfirmDialog(
+        text = stringResource(R.string.recalc_confirm),
+        onDismiss = { recalcDialog = false }, onOk = { recalcDialog = false; vm.recalculate() },
+    )
     if (deleteDialog) ConfirmDialog(
         text = stringResource(R.string.competition_delete_confirm),
         onDismiss = { deleteDialog = false }, onOk = { deleteDialog = false; vm.deleteCompetition(); onDeleted() },

@@ -5,7 +5,7 @@
     <string name="calibration_title">Калібрування</string>
     <string name="mic_check_title">Перевірка мікрофона</string>
     <string name="mic_source_unprocessed">Джерело звуку: без обробки</string>
-    <string name="mic_source_fallback">Джерело звуку: розпізнавання мови (без обробки не підтримується)</string>
+    <string name="mic_source_fallback">Джерело звуку: розпізнавання мови, вирівнювання гучності вимкнено</string>
     <string name="mic_listen">Слухати</string>
     <string name="mic_stop">Зупинити</string>
     <string name="mic_level_unit">дБFS</string>
@@ -69,4 +69,19 @@
     <string name="result_delete">Вилучити замір</string>
     <string name="result_delete_confirm">Вилучити замір учасника «%1$s»?</string>
     <string name="result_place">%1$s місце</string>
+    <string name="cal_ref">Опорний рівень</string>
+    <string name="cal_ref_value">%1$s дБFS</string>
+    <string name="cal_gamma">Вага гучності</string>
+    <string name="cal_threshold">Поріг гучності</string>
+    <string name="cal_threshold_value">%1$d дБ</string>
+    <string name="cal_sample_title">Змагання-зразок</string>
+    <string name="cal_no_samples">Щоб калібрувати, зробіть пробні заміри в будь-якому змаганні</string>
+    <string name="cal_preview_title">Перегляд замірів</string>
+    <string name="cal_preview_note">Перегляд зі зміненим порогом наближений</string>
+    <string name="cal_target_title">Скільки балів має дати цей замір?</string>
+    <string name="cal_target_fail">Не вдається: бал цього заміру нульовий або потрібний рівень поза межами</string>
+    <string name="cal_reset">Скинути</string>
+    <string name="cal_saved">Збережено</string>
+    <string name="recalc_action">Перерахувати за поточним калібруванням</string>
+    <string name="recalc_confirm">Бали всіх учасників буде перераховано з поточним опорним рівнем і вагою гучності. Тривалість не зміниться.</string>
 </resources>

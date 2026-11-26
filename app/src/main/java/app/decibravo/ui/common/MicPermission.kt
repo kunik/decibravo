@@ -11,6 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,7 +36,7 @@ private fun hasMic(context: Context) =
     ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
 
 @Composable
-fun WithMicPermission(content: @Composable () -> Unit) {
+fun WithMicPermission(compact: Boolean = false, content: @Composable () -> Unit) {
     val context = LocalContext.current
     var granted by remember { mutableStateOf(hasMic(context)) }
     var asked by rememberSaveable { mutableStateOf(false) }
@@ -54,7 +55,7 @@ fun WithMicPermission(content: @Composable () -> Unit) {
         content()
     } else {
         Column(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
+            modifier = (if (compact) Modifier.fillMaxWidth() else Modifier.fillMaxSize()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp, androidx.compose.ui.Alignment.CenterVertically),
         ) {
             Text(stringResource(R.string.mic_permission_explain), color = Palette.Text, fontSize = 18.sp)

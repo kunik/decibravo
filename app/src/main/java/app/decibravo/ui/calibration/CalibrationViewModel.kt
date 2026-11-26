@@ -5,6 +5,18 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.decibravo.DeciBravoApp
 import app.decibravo.audio.BAR_COUNT
+import app.decibravo.data.Competition
+import app.decibravo.data.Measurement
+import app.decibravo.data.acceptedCount
+import app.decibravo.scoring.Calibration
+import app.decibravo.scoring.Entry
+import app.decibravo.scoring.MeasureParams
+import app.decibravo.scoring.fmtScore
+import app.decibravo.scoring.fmtSeconds
+import app.decibravo.scoring.fmtStrength
+import app.decibravo.scoring.rank
+import app.decibravo.scoring.refForTargetScore
+import app.decibravo.scoring.replay
 import app.decibravo.scoring.Frame
 import app.decibravo.scoring.dbfs
 import app.decibravo.scoring.floorIsNoisy
@@ -36,10 +48,89 @@ data class MicUiState(
     val error: Boolean = false,
 )
 
+data class PreviewRow(val participantId: String, val name: String, val place: Int, val duration: String, val strength: String, val score: String)
+
+/** Перераховує зараховані заміри зразка з калібруванням draft; фон, найдовший замір і тишу бере зі зразка. */
+fun preview(sample: Competition, measurements: Map<String, Measurement>, draft: Calibration): List<PreviewRow> {
+    val floor = sample.floorRms ?: return emptyList()
+    val params = MeasureParams(sample.maxDurationSec, sample.quietEndSec, floor, draft)
+    val names = sample.participants.associate { it.id to it.name }
+    val results = sample.participants.mapNotNull { p ->
+        measurements[p.id]?.let { m -> p.id to (m.acceptedAt to replay(m.frames, params)) }
+    }.toMap()
+    return rank(results.map { (id, v) -> Entry(id, v.second.score, v.second.durationSec, v.first) }).map { r ->
+        val res = results.getValue(r.entry.participantId).second
+        PreviewRow(
+            r.entry.participantId, names.getValue(r.entry.participantId), r.place,
+            fmtSeconds(res.durationSec), fmtStrength(res.strength), fmtScore(res.score),
+        )
+    }
+}
+
+data class CalUi(
+    val draft: Calibration = Calibration(),
+    val samples: List<Competition> = emptyList(),
+    val sampleId: String? = null,
+    val rows: List<PreviewRow> = emptyList(),
+    val saved: Boolean = false,
+)
+
 class CalibrationViewModel(app: Application) : AndroidViewModel(app) {
     private val source = (app as DeciBravoApp).frameSource()
     private val _state = MutableStateFlow(MicUiState(unprocessed = source.sourceName == "UNPROCESSED"))
     val state: StateFlow<MicUiState> = _state.asStateFlow()
+
+    private val store = (app as DeciBravoApp).store
+    private val _cal = MutableStateFlow(CalUi())
+    val cal: StateFlow<CalUi> = _cal.asStateFlow()
+    private var sample: Competition? = null
+    private var sampleMeasurements: Map<String, Measurement> = emptyMap()
+
+    init { loadCalibration() }
+
+    private fun loadCalibration() {
+        val samples = store.listCompetitions().filter { it.acceptedCount() > 0 }
+        _cal.update { it.copy(draft = store.loadCalibration(), samples = samples) }
+        select(samples.firstOrNull()?.id)
+    }
+
+    fun select(id: String?) {
+        val c = id?.let { store.loadCompetition(it) }
+        sample = c
+        sampleMeasurements = c?.participants?.mapNotNull { p ->
+            p.measurementId?.let { mid -> store.loadMeasurement(c.id, mid)?.let { p.id to it } }
+        }?.toMap() ?: emptyMap()
+        _cal.update { it.copy(sampleId = c?.id) }
+        recompute()
+    }
+
+    private fun recompute() {
+        val c = sample
+        _cal.update { it.copy(rows = if (c == null) emptyList() else preview(c, sampleMeasurements, it.draft)) }
+    }
+
+    fun setDraft(f: (Calibration) -> Calibration) {
+        _cal.update { it.copy(draft = f(it.draft), saved = false) }
+        recompute()
+    }
+
+    fun reset() = setDraft { Calibration() }
+
+    fun save() {
+        store.saveCalibration(_cal.value.draft)
+        _cal.update { it.copy(saved = true) }
+    }
+
+    /** Підбирає опорний рівень, щоб замір учасника дав targetScore; false, якщо це неможливо. */
+    fun fitScale(participantId: String, targetScore: Double): Boolean {
+        val c = sample ?: return false
+        val m = sampleMeasurements[participantId] ?: return false
+        val floor = c.floorRms ?: return false
+        val params = MeasureParams(c.maxDurationSec, c.quietEndSec, floor, _cal.value.draft)
+        val ref = refForTargetScore(m.frames, params, targetScore) ?: return false
+        setDraft { it.copy(refDbfs = ref) }
+        return true
+    }
 
     private var job: Job? = null
     private val recent = ArrayDeque<Double>()
