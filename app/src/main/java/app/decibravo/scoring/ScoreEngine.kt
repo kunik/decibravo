@@ -35,6 +35,7 @@ class ScoreEngine(private val params: MeasureParams) {
     private var score = 0.0
     private var applauseFrames = 0
     private var onsetContrib = 0.0       // сума внесків поточної серії гучних у WAITING
+    private var onsetClip = 0            // перевантажені відліки поточної серії гучних у WAITING
     private var loudRun = 0
     private var quietRun = 0
     private var loudSpanFrames = 0  // кількість кадрів від початку оплесків до останнього гучного включно
@@ -46,20 +47,22 @@ class ScoreEngine(private val params: MeasureParams) {
     fun feed(frame: Frame): Snapshot {
         if (phase == Phase.ENDED) return snapshot
         frameCount++
-        clipSum += frame.clipped
         val loud = isLoud(frame, params)
         when (phase) {
             Phase.WAITING -> {
                 if (loud) {
                     loudRun++
                     onsetContrib += contribution(frame, params)
+                    onsetClip += frame.clipped
                 } else {
                     loudRun = 0
                     onsetContrib = 0.0
+                    onsetClip = 0
                 }
                 if (loudRun >= ONSET_FRAMES) {
                     phase = Phase.APPLAUSE
                     score = onsetContrib
+                    clipSum = onsetClip     // перевантаження рахуємо лише від початку оплесків
                     applauseFrames = ONSET_FRAMES
                     loudSpanFrames = ONSET_FRAMES
                     quietRun = 0
@@ -70,6 +73,7 @@ class ScoreEngine(private val params: MeasureParams) {
             }
             Phase.APPLAUSE -> {
                 applauseFrames++
+                clipSum += frame.clipped
                 if (loud) {
                     score += contribution(frame, params)
                     loudSpanFrames = applauseFrames

@@ -1,6 +1,7 @@
 package app.decibravo.data
 
 import app.decibravo.scoring.Calibration
+import app.decibravo.scoring.MeasureParams
 import app.decibravo.scoring.replay
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -17,6 +18,7 @@ class Store(private val root: File, private val now: () -> Long = System::curren
         File(root, "tmp").deleteRecursively()
         File(root, "tmp").mkdirs()
         cleanOrphans()
+        finishInterruptedRecalculations()
     }
 
     private fun newId() = UUID.randomUUID().toString()
@@ -195,16 +197,38 @@ class Store(private val root: File, private val now: () -> Long = System::curren
         if (c.acceptedCount() == 0) return c
         val device = loadCalibration()
         val newCal = frozen.copy(refDbfs = device.refDbfs, gamma = device.gamma)
-        val params = c.copy(frozenCalibration = newCal).measureParams(device) ?: return c
+        val updated = c.copy(frozenCalibration = newCal)
+        val params = updated.measureParams(device) ?: return c
+        // Позначка лежить на диску, доки перерахунок не завершено; якщо його обірвано, наступний запуск
+        // доводить усі результати до калібрування, яке встигло зберегтись у змаганні (старого або нового).
+        writeAtomic(recalcMarker(competitionId), "")
+        rewriteResults(updated, params)
+        saveCompetition(updated)                                  // точка фіксації
+        recalcMarker(competitionId).delete()
+        return updated
+    }
+
+    private fun recalcMarker(id: String) = File(compDir(id), "recalc.pending")
+
+    private fun rewriteResults(c: Competition, params: MeasureParams) {
         for (p in c.participants) {
             val mid = p.measurementId ?: continue
-            val m = loadMeasurement(competitionId, mid) ?: continue
+            val m = loadMeasurement(c.id, mid) ?: continue
             val r = replay(m.frames, params)
-            writeAtomic(File(measDir(competitionId), "$mid.json"), json.encodeToString(m.copy(result = r)))
+            if (r != m.result) writeAtomic(File(measDir(c.id), "$mid.json"), json.encodeToString(m.copy(result = r)))
         }
-        val updated = c.copy(frozenCalibration = newCal)
-        saveCompetition(updated)
-        return updated
+    }
+
+    private fun finishInterruptedRecalculations() {
+        val dirs = File(root, "competitions").listFiles { f -> f.isDirectory } ?: return
+        for (dir in dirs) {
+            val marker = recalcMarker(dir.name)
+            if (!marker.exists()) continue
+            val c = loadCompetition(dir.name)
+            val params = c?.takeIf { it.frozenCalibration != null }?.measureParams(loadCalibration())
+            if (c != null && params != null) rewriteResults(c, params)
+            marker.delete()
+        }
     }
 
     fun newTempWav(): File {

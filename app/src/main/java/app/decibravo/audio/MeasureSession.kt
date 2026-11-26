@@ -31,7 +31,7 @@ class MeasureSession(
     private var engine: ScoreEngine? = null
     private var wav: WavWriter? = null
     private val frames = ArrayList<Frame>()
-    private val barsPerFrame = params.maxDurationSec * 10 / BAR_COUNT.toDouble()   // k: кадрів на стовпчик
+    private val maxFrames = params.maxDurationSec * 10
     private val floorDb = dbfs(params.floorRms)
 
     var state: MeasureState = MeasureState.Ready
@@ -102,9 +102,11 @@ class MeasureSession(
         val bars = FloatArray(BAR_COUNT) { -1f }
         val start = frames.size - s.applauseFrames
         for (n in 0 until s.applauseFrames) {
-            val i = (n / barsPerFrame).toInt().coerceAtMost(BAR_COUNT - 1)
+            // Кадр n займає стовпчики [n·50/maxFrames, (n+1)·50/maxFrames): за короткого ліміту один кадр покриває кілька.
+            val from = (n * BAR_COUNT / maxFrames).coerceAtMost(BAR_COUNT - 1)
+            val to = (((n + 1) * BAR_COUNT - 1) / maxFrames).coerceIn(from, BAR_COUNT - 1)
             val v = ((dbfs(frames[start + n].rms) - floorDb) / BAR_RANGE_DB).coerceIn(0.0, 1.0).toFloat()
-            if (v > bars[i]) bars[i] = v
+            for (i in from..to) if (v > bars[i]) bars[i] = v
         }
         return MeasureState.Running(false, s.score, s.applauseFrames / 10.0, bars.toList())
     }

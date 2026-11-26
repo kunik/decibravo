@@ -100,4 +100,12 @@ class ScoreEngineTest {
         val (r, used) = live(seq(20 to LOUD, 40 to QUIET), p.copy(quietEndSec = 1.5))
         assertEquals(EndReason.SILENCE, r!!.reason); assertEquals(35, used)
     }
+
+    @Test fun clippingBeforeApplause_doesNotMarkOverload() {
+        val r = replay(listOf(Frame(LOUD.rms, 50)) + seq(5 to QUIET, 30 to LOUD), p)
+        assertFalse(r.overloaded); assertEquals(30.0, r.score, 1e-6)
+    }
+    @Test fun clippingInOnsetFrames_counts() {
+        assertTrue(replay(listOf(Frame(LOUD.rms, 10)) + seq(29 to LOUD), p).overloaded)
+    }
 }

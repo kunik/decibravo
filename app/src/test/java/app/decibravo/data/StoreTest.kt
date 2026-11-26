@@ -1,5 +1,6 @@
 package app.decibravo.data
 
+import kotlinx.serialization.encodeToString
 import app.decibravo.scoring.Calibration
 import app.decibravo.scoring.EndReason
 import app.decibravo.scoring.Frame
@@ -152,5 +153,16 @@ class StoreTest {
         assertEquals(1.3, s.loadCalibration().gamma, 0.0); assertFalse(s.calibrationUnreadable())
         File(tmp.root, "calibration.json.bak").delete()
         assertEquals(Calibration(), s.loadCalibration()); assertTrue(s.calibrationUnreadable()); assertTrue(f.exists())
+    }
+
+    @Test fun interruptedRecalculation_isFinishedOnNextStart() {
+        val s = Store(tmp.root); val c = s.createCompetition("n", listOf("A"), 10, 2.0); val pid = c.participants[0].id
+        s.saveCompetition(c.copy(floorRms = 0.001)); val mid = s.accept(c.id, pid, pending()).participants[0].measurementId!!
+        val f = File(tmp.root, "competitions/${c.id}/measurements/$mid.json")
+        val m = Json.decodeFromString<Measurement>(f.readText())
+        f.writeText(Json.encodeToString(m.copy(result = m.result.copy(score = 999.0))))   // перерахунок обірвано посередині
+        val marker = File(tmp.root, "competitions/${c.id}/recalc.pending"); marker.writeText("")
+        val again = Store(tmp.root)
+        assertEquals(30.0, again.loadMeasurement(c.id, mid)!!.result.score, 1e-6); assertFalse(marker.exists())
     }
 }

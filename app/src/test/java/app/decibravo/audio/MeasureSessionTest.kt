@@ -58,4 +58,13 @@ class MeasureSessionTest {
         val s = MeasureSession(p, "UNPROCESSED", java.io.File(tmp.root, "нема/такої/теки.wav"))
         assertTrue(s.start() is MeasureState.Failed)
     }
+
+    @Test fun shortLimit_barsHaveNoGaps() {
+        val s = MeasureSession(p.copy(maxDurationSec = 3), "x", tmp.newFile()); s.start()
+        var r: MeasureState = s.state
+        repeat(12) { r = s.onChunk(chunk(LOUD_RMS)) }
+        val bars = (r as MeasureState.Running).bars
+        val last = bars.indexOfLast { it >= 0f }
+        assertTrue(last >= 18); assertTrue(bars.take(last + 1).all { it >= 0f })
+    }
 }
