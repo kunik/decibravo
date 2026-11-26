@@ -121,6 +121,9 @@ fun MeasureScreen(onExit: () -> Unit, vm: MeasureViewModel = viewModel()) {
                     ui.participantName, st.result, ui.place?.let { placeText(it) } ?: "",
                     endReasonText(st.result.reason, ui.quietEndSec), handleBack,
                 ) {
+                    if (ui.saveFailed) {
+                        Text(stringResource(R.string.measure_save_failed), color = Palette.Warning, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp))
+                    }
                     PrimaryButton(stringResource(R.string.measure_accept), onClick = vm::accept, height = 72.dp, enabled = !ui.accepted)
                     OutlineButton(stringResource(R.string.measure_redo), onClick = vm::cancel, enabled = !ui.accepted)
                 }

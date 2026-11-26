@@ -163,10 +163,8 @@ class Store(private val root: File, private val now: () -> Long = System::curren
         val dir = measDir(competitionId).also { it.mkdirs() }
         val wavName = "$mid.wav"
         val wavTarget = File(dir, wavName)
-        if (!pending.wavTemp.renameTo(wavTarget)) {
-            pending.wavTemp.copyTo(wavTarget, overwrite = true)
-            pending.wavTemp.delete()
-        }
+        // Копіюємо, а не переносимо: якщо збереження нижче не вдасться, тимчасовий запис лишається для повторної спроби.
+        pending.wavTemp.copyTo(wavTarget, overwrite = true)
         val m = Measurement(mid, participantId, now(), pending.audioSource, pending.frames, pending.result, wavName)
         writeAtomic(File(dir, "$mid.json"), json.encodeToString(m))
         val oldMid = participant.measurementId
@@ -175,6 +173,7 @@ class Store(private val root: File, private val now: () -> Long = System::curren
             participants = c.participants.map { if (it.id == participantId) it.copy(measurementId = mid) else it },
         )
         saveCompetition(updated)                                  // точка фіксації
+        pending.wavTemp.delete()
         oldMid?.let { deleteMeasurementFiles(competitionId, it) } // старе прибираємо лише після неї
         return updated
     }

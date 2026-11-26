@@ -43,6 +43,7 @@ data class MeasureUi(
     val state: MeasureState = MeasureState.Ready,
     val place: Int? = null,
     val accepted: Boolean = false,
+    val saveFailed: Boolean = false,
 )
 
 class MeasureViewModel(app: Application, handle: SavedStateHandle) : AndroidViewModel(app) {
@@ -76,7 +77,7 @@ class MeasureViewModel(app: Application, handle: SavedStateHandle) : AndroidView
 
     private fun publish(s: MeasureState) {
         val place = (s as? MeasureState.Done)?.let { placeIfAccepted(it.result.score, it.result.durationSec, others) }
-        _ui.value = _ui.value.copy(state = s, place = place)
+        _ui.value = _ui.value.copy(state = s, place = place, saveFailed = if (s is MeasureState.Done) _ui.value.saveFailed else false)
     }
 
     private fun stopCollecting() { job?.cancel(); job = null }
@@ -128,14 +129,13 @@ class MeasureViewModel(app: Application, handle: SavedStateHandle) : AndroidView
         if (saved) return
         val pending = session.pending() ?: return
         saved = true
-        _ui.value = _ui.value.copy(accepted = true)
         try {
             store.accept(competitionId, participantId, pending)
+            _ui.value = _ui.value.copy(accepted = true, saveFailed = false)
         } catch (t: Throwable) {
+            // Оплески не повторити: результат лишається на екрані, «Зарахувати» можна натиснути ще раз.
             saved = false
-            pending.wavTemp.delete()
-            session.fail(t)
-            _ui.value = _ui.value.copy(accepted = false, state = session.state)
+            _ui.value = _ui.value.copy(accepted = false, saveFailed = true)
         }
     }
 

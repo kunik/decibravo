@@ -59,6 +59,7 @@
     <string name="measure_progress">%1$s с із %2$d</string>
     <string name="measure_duration_label">тривалість</string>
     <string name="measure_strength_label">сила</string>
+    <string name="measure_save_failed">Не вдалося зберегти результат. Натисніть «Зарахувати» ще раз.</string>
     <string name="measure_overloaded">Мікрофон перевантажився; результат може бути заниженим</string>
     <string name="measure_accept">Зарахувати</string>
     <string name="measure_redo">Переміряти</string>
