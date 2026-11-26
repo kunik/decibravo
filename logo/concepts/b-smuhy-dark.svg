@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240">
-<rect width="240" height="240" rx="54" fill="#000000"/>
-<g transform="translate(4,0)">
-<clipPath id="cdy"><path d="M28,50 h27 a70,70 0 0 1 0,140 h-27 z"/></clipPath>
-<clipPath id="cby"><path d="M141,50 h28 a35,35 0 0 1 0,70 a35,35 0 0 1 0,70 h-28 z"/></clipPath>
-<g clip-path="url(#cdy)" fill="#FFD60A"><rect x="28" y="40" width="12" height="160"/><rect x="45" y="40" width="12" height="160"/><rect x="62" y="40" width="12" height="160"/><rect x="79" y="40" width="12" height="160"/><rect x="96" y="40" width="12" height="160"/><rect x="113" y="40" width="12" height="160"/></g>
-<g clip-path="url(#cby)" fill="#FFFFFF"><rect x="141" y="40" width="12" height="160"/><rect x="158" y="40" width="12" height="160"/><rect x="175" y="40" width="12" height="160"/><rect x="192" y="40" width="12" height="160"/></g>
-</g>
-</svg>
