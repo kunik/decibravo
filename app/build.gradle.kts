@@ -1,8 +1,18 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
 }
+
+// Дані upload-ключа лежать поза репозиторієм: ~/android-apps/decibravo/keystore.properties.
+// Без цього файлу release-збірка просто лишається непідписаною.
+val keystoreProps = Properties().apply {
+    val file = File(System.getProperty("user.home"), "android-apps/decibravo/keystore.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+val hasReleaseKey = keystoreProps.getProperty("storeFile") != null
 
 android {
     namespace = "app.decibravo"
@@ -18,6 +28,23 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "0.1"
+    }
+
+    signingConfigs {
+        if (hasReleaseKey) {
+            create("release") {
+                storeFile = File(keystoreProps.getProperty("storeFile"))
+                storePassword = keystoreProps.getProperty("storePassword")
+                keyAlias = keystoreProps.getProperty("keyAlias")
+                keyPassword = keystoreProps.getProperty("keyPassword")
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            if (hasReleaseKey) signingConfig = signingConfigs.getByName("release")
+        }
     }
 
     compileOptions {
